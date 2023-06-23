@@ -1,5 +1,10 @@
 from django.shortcuts import render
 from .models import *
+import pdfkit
+from django.http import HttpResponse
+from django.template import loader
+import io
+
 
 
 # Create your views here.
@@ -22,16 +27,30 @@ def accept(request):
 
 
 
-def resume(request, id):
+def resume(request,id):
     user_profile = Profile.objects.get(pk=id)
-    context = {
-        'user_profile': user_profile,
+    template = loader.get_template('generator/cv.html')
+    html = template.render({'user_profile':user_profile})
+    options ={
+        'page-size':'Letter',
+        'encoding':"UTF-8",
     }
 
-    return render(request, 'generator/cv.html', context)
+    config = pdfkit.configuration(wkhtmltopdf=r'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe')
+
+    pdf = pdfkit.from_string(html,False,options=options,configuration=config)
+    response = HttpResponse(pdf,content_type='application/pdf')
+    response['Content-Disposition'] ='attachment;filename=resume.pdf'
+
+    return response
 
 
-
+def profile_listing(request):
+    profiles = Profile.objects.all()
+    context = {
+        'profiles': profiles,
+    }
+    return render(request,'generator/profile_listing.html', context)
 
 
 
